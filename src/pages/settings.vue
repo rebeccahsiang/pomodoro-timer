@@ -43,6 +43,6 @@
 </script>
 
 <route lang="yaml">
-  mata:
-  title:設定
+mata:
+  title: 設定
 </route>
