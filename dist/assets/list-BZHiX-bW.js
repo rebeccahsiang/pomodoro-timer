@@ -1,0 +1,1 @@
+import{Et as e,yn as t}from"./VContainer-BhO3eInz.js";var n=e(`list`,()=>({items:t([]),finishedItems:t([]),currentItem:t(``),id:t(1)}),{persist:{key:`pomodoro-list`}});export{n as t};
