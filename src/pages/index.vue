@@ -15,23 +15,18 @@
       </v-col>
 
       <v-col class="text-center d-flex ga-5 justify-center" cols="12">
-        <!--
-          開始按鈕停用條件
-          1. 倒數中
-          2. 沒有目前事項也沒有未完成事項
-        -->
         <v-btn
           :disabled="status === STATUS.COUNTING || (list.currentItem.length === 0 && list.items.length === 0)"
           icon="mdi-play"
           @click="startTimer"
         />
-        <!-- 只有倒數中才能暫停 -->
+
         <v-btn
           :disabled="status !== STATUS.COUNTING"
           icon="mdi-pause"
           @click="pauseTimer"
         />
-        <!-- 目前有事項才能跳過 -->
+
         <v-btn
           :disabled="list.currentItem.length === 0"
           icon="mdi-skip-next"
@@ -57,7 +52,8 @@
   const timeleftText = computed(() => {
     const m = Math.floor(time.timeleft / 60).toString().padStart(2, '0')
     const s = (time.timeleft % 60).toString().padStart(2, '0')
-    return m + ':' + s
+
+    return `${m}:${s}`
   })
 
   const STATUS = {
@@ -69,10 +65,19 @@
   let timer = 0
 
   const startTimer = () => {
-    // 如果是停止狀態開始倒數、目前沒有事項
-    // 從待辦事項中取出第一個放入目前事項
     if (status.value === STATUS.STOP && list.currentItem === '') {
-      list.currentItem = time.isBreakTime ? '休息一下' : list.items.shift().text
+      if (time.isBreakTime) {
+        list.currentItem = '休息一下'
+        time.timeleft = time.currentBreakTime
+      } else {
+        const nextItem = list.items.shift()
+
+        if (nextItem) {
+          list.currentItem = nextItem.text
+          time.timeleft = nextItem.time ?? time.TIME
+          time.currentBreakTime = nextItem.breakTime ?? time.TIME_BREAK
+        }
+      }
     }
 
     status.value = STATUS.COUNTING
@@ -99,6 +104,7 @@
       body: list.currentItem,
       icon: new URL('@/assets/food.png', import.meta.url).href,
     })
+
     if (isSupported.value && permissionGranted.value) {
       show()
     }
@@ -112,13 +118,21 @@
 
     list.currentItem = ''
 
-    if (list.items.length > 0) {
-      time.isBreakTime = !time.isBreakTime
+    time.isBreakTime = list.items.length > 0 ? !time.isBreakTime : false
+
+    if (time.isBreakTime) {
+      time.timeleft = time.currentBreakTime
+    } else if (list.items.length > 0) {
+      time.timeleft = list.items[0].time ?? time.TIME
+    } else {
+      time.timeleft = time.TIME
     }
 
-    time.timeleft = time.isBreakTime ? time.TIME_BREAK : time.TIME
+    if (time.isBreakTime === false && list.items.length > 0) {
+      time.currentBreakTime = list.items[0].breakTime ?? time.TIME_BREAK
+    }
 
-    if (list.items.length > 0) {
+    if (list.items.length > 0 || time.isBreakTime) {
       startTimer()
     }
   }

@@ -9,16 +9,19 @@ export const useTimeStore = defineStore('time', () => {
   const timeleft = ref(TIME)
   // 是否是休息時間
   const isBreakTime = ref(false)
+  // 動態休息時間記錄
+  const currentBreakTime = ref(TIME_BREAK)
 
   return {
     TIME,
     TIME_BREAK,
     timeleft,
     isBreakTime,
+    currentBreakTime,
   }
 }, {
   persist: {
     key: 'pomodoro-time',
-    pick: ['timeleft', 'isBreakTime'],
+    pick: ['timeleft', 'isBreakTime', 'currentBreakTime'],
   },
 })

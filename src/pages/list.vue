@@ -6,24 +6,40 @@
       </v-col>
 
       <v-col cols="12">
-        <v-text-field
-          ref="newItemTextField"
-          v-model="newItem"
-          append-icon="mdi-plus"
-          clearable
-          hint="三個字以上才能新增"
-          label="新增事項"
-          :rules="[rules.required(), rules.minLength(3)]"
-          variant="outlined"
-          @click:append="addItem"
-          @keydown.enter="addItem"
-          @update:focused="onNewItemFocusUpdate"
-        />
+        <v-row>
+          <v-col cols="8">
+            <v-text-field
+              ref="newItemTextField"
+              v-model="newItem"
+              clearable
+              hint="三個字以上才能新增"
+              label="新增事項名稱"
+              :rules="[rules.required(), rules.minLength(3)]"
+              variant="outlined"
+              @keydown.enter="addItem"
+              @update:focused="onNewItemFocusUpdate"
+            />
+          </v-col>
+
+          <v-col cols="4">
+            <v-text-field
+              v-model.number="newItemTime"
+              append-icon="mdi-plus"
+              label="專注時間 (分鐘)"
+              min="1"
+              type="number"
+              variant="outlined"
+              @click:append="addItem"
+              @keydown.enter="addItem"
+            />
+          </v-col>
+        </v-row>
 
         <v-table>
           <thead>
             <tr>
               <th>名稱</th>
+
               <th>操作</th>
             </tr>
           </thead>
@@ -43,19 +59,55 @@
                 />
 
                 <template v-if="!item.edit">
-                  {{ item.text }}
+                  <span>{{ item.text }}</span>
+
+                  <v-chip
+                    class="ml-2"
+                    color="red-lighten-1"
+                    size="small"
+                    variant="flat"
+                  >
+                    專注: {{ ((item.time !== undefined ? item.time : 1500) / 60).toFixed(1).replace('.0', '') }}分
+                  </v-chip>
+
+                  <v-chip
+                    class="ml-1"
+                    color="amber-darken-1"
+                    size="small"
+                    variant="flat"
+                  >
+                    休息: {{ ((item.breakTime !== undefined ? item.breakTime : 300) / 60).toFixed(1).replace('.0', '') }}分
+                  </v-chip>
                 </template>
               </td>
 
               <td>
                 <template v-if="item.edit">
-                  <v-btn icon="mdi-undo" @click="cancelEditItem(item)" />
-                  <v-btn icon="mdi-check" @click="submitEditItem(item, idx)" />
+                  <v-btn
+                    icon="mdi-undo"
+                    variant="text"
+                    @click="cancelEditItem(item)"
+                  />
+
+                  <v-btn
+                    icon="mdi-check"
+                    variant="text"
+                    @click="submitEditItem(item, idx)"
+                  />
                 </template>
 
                 <template v-else>
-                  <v-btn icon="mdi-pencil" @click="editItem(item)" />
-                  <v-btn icon="mdi-delete" @click="delItem(item.id)" />
+                  <v-btn
+                    icon="mdi-pencil"
+                    variant="text"
+                    @click="editItem(item)"
+                  />
+
+                  <v-btn
+                    icon="mdi-delete"
+                    variant="text"
+                    @click="delItem(item.id)"
+                  />
                 </template>
               </td>
             </tr>
@@ -72,6 +124,7 @@
           <thead>
             <tr>
               <th>名稱</th>
+
               <th>操作</th>
             </tr>
           </thead>
@@ -81,7 +134,11 @@
               <td>{{ item.text }}</td>
 
               <td>
-                <v-btn icon="mdi-delete" @click="delFinishedItem(item.id)" />
+                <v-btn
+                  icon="mdi-delete"
+                  variant="text"
+                  @click="delFinishedItem(item.id)"
+                />
               </td>
             </tr>
           </tbody>
@@ -100,19 +157,50 @@
   const rules = useRules()
 
   const newItem = ref('')
+  const newItemTime = ref(25)
   const newItemTextField = useTemplateRef('newItemTextField')
 
   const addItem = () => {
     if (!newItemTextField.value.isValid) return
 
-    list.items.push({
-      id: list.id++,
-      text: newItem.value,
-      edit: false,
-      model: newItem.value,
-    })
+    const mins = Number.parseInt(newItemTime.value, 10) || 25
 
-    newItemTextField.value.reset()
+    if (mins > 50) {
+      let remaining = mins
+      let phase = 1
+
+      while (remaining > 0) {
+        const currentPhaseMinutes = Math.min(remaining, 50)
+        const currentBreakMinutes = currentPhaseMinutes / 5
+
+        list.items.push({
+          id: list.id++,
+          text: `${newItem.value} (階段${phase})`,
+          time: currentPhaseMinutes * 60,
+          breakTime: currentBreakMinutes * 60,
+          edit: false,
+          model: `${newItem.value} (階段${phase})`,
+        })
+
+        remaining -= currentPhaseMinutes
+        phase++
+      }
+    } else {
+      const breakMinutes = mins / 5
+
+      list.items.push({
+        id: list.id++,
+        text: newItem.value,
+        time: mins * 60,
+        breakTime: breakMinutes * 60,
+        edit: false,
+        model: newItem.value,
+      })
+    }
+
+    newItem.value = ''
+    newItemTime.value = 25
+    newItemTextField.value.resetValidation()
   }
 
   const onNewItemFocusUpdate = async focus => {
