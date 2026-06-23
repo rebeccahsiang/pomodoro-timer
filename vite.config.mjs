@@ -11,7 +11,7 @@ import VueRouter from 'vue-router/vite'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  base: './',
+  base: '/pomodoro-timer/',
   plugins: [
     VueRouter({ dts: 'src/typed-router.d.ts' }),
     Vue({
